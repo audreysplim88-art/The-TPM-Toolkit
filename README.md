@@ -1,6 +1,6 @@
 
 # The-TPM-Toolkit
-AI Skills for TPMs
+A library of AI Skills and Agents for TPMs
 
 PRD Scribe Guide:
 [PRD Scribe Guide.pdf](https://github.com/user-attachments/files/29197068/PRD.Scribe.Guide.pdf)
