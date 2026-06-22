@@ -166,44 +166,58 @@ Same as Track 1: structure, synthesise, flag open items, update the Risk & Decis
 
 This is a first-class output — produce and update it after every meeting. Actively look for anything unresolved, ambiguous, or potentially blocking, and capture it here. The TPM needs a complete picture of what's still outstanding before they can write a credible PRD.
 
-| # | Item | Type | Owner | Status | Notes |
-|---|------|------|-------|--------|-------|
-| 1 | Example: Legal hasn't reviewed data sharing implications | Decision needed | TPM → Legal | Open | Blocks PRD sign-off |
-| 2 | Example: Pricing model not decided | Decision needed | CPO | Open | Needed before scope is final |
-| 3 | Example: Salesforce CRM compatibility unconfirmed | Risk | Engineering Lead | Open | Could expand scope if confirmed |
+Every item needs: a description, a type, an owner, and a status.
 
 **Types:**
+- **Blocker** — gates a specific phase of work or the PRD itself (highest priority)
 - **Decision needed** — a call that must be made before the PRD can be finalised
 - **Risk** — a known unknown that could affect scope, timeline, or feasibility
-- **Blocker** — gates a specific phase of work or the PRD itself
 - **Follow-up** — a question needing an answer from a specific person
 
 After each meeting update, explicitly state which items are now resolved and which remain open. If there are blockers, say so directly.
 
 ---
 
-## Discovery Summary
+## Discovery Dashboard
 
-When the TPM wants to consolidate, produce a Discovery Summary. This is what they take away to write the PRD.
+When the TPM wants to consolidate after one or more meetings, produce a **Discovery Dashboard** as a persistent Cowork artifact using `mcp__cowork__create_artifact`. This is what the TPM keeps coming back to as discovery progresses, and uses as the foundation for writing the PRD.
 
-```
-## Discovery Summary: [Project Name]
-Date: [Date] | TPM: [Name] | Status: In Progress / Ready for PRD
+### How to create it
 
-### What we know
-[Everything confirmed across both tracks: business case, scope
-(in/out/nice-to-have), success criteria, key stakeholders,
-technical approach, effort estimate]
+Call `mcp__cowork__create_artifact` with:
+- `name`: "Discovery Dashboard — [Project Name]"
+- `description`: "Live discovery summary for [Project Name] — what we know, open decisions and risks, and PRD readiness"
+- `mcp_tools`: [] (no live connector data needed — content is populated from meeting notes)
 
-### Risk & Decision Register
-[All open items with owners, types, and current status]
+### Dashboard structure (HTML)
 
-### Ready for PRD?
-[Direct assessment. If there are blockers, name them and tell
-the TPM exactly what to chase down and who to talk to first.]
-```
+Build the artifact as a single-page HTML dashboard with these sections:
 
-The "Ready for PRD?" section must be direct. Don't paper over gaps — the TPM needs to know what's standing between them and writing the PRD.
+**1. Header** — project name, TPM name, date, status badge (In Progress / Ready for PRD)
+
+**2. Metric strip** — four summary cards: items captured, decisions needed, risks flagged, blockers. Use amber text for decisions/risks, red for blockers.
+
+**3. Information cards (2×2 grid)**
+- Business case — what problem, for whom, cost of inaction, timeline forcing function
+- Success criteria — specific measurable targets, listed as pills
+- Scope — three sub-sections: In / Out / Nice to have
+- Technical approach — recommended approach, phasing, effort estimate
+
+**4. Risk & Decision Register table** — columns: Item, Type, Owner, Status, Impact. Colour-code type badges:
+  - Blocker = danger (red)
+  - Decision needed = warning (amber)
+  - Risk = info (blue)
+  - Follow-up = secondary (grey)
+
+**5. Ready for PRD? verdict** — the most important section. Show a clear badge (Not yet / Almost / Ready). List each outstanding blocker or decision as a named action item with a specific owner. Be direct — name exactly what's standing between the TPM and writing the PRD. Include a "Mark items resolved ↗" button using `sendPrompt`.
+
+### Styling rules
+
+Use CSS variables throughout (`var(--color-background-primary)`, `var(--color-text-primary)`, etc.) so the dashboard works in both light and dark mode. Cards use `border: 0.5px solid var(--color-border-tertiary)` and `border-radius: var(--border-radius-lg)`. The "Ready for PRD?" section uses a `1.5px` border in the appropriate semantic colour (warning if not ready, success if ready). All text in sentence case, font-weight 400 or 500 only.
+
+### Updating the dashboard
+
+When the TPM resolves items or adds new meeting notes, use `mcp__cowork__update_artifact` to refresh the dashboard in place — same artifact, updated content. Don't create a new one each time.
 
 ---
 
