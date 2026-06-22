@@ -1,0 +1,285 @@
+---
+name: prd-writer
+description: "Write a complete, structured software PRD from discovery inputs. Use this skill whenever a TPM or PM needs to produce a formal Product Requirements Document for a software project. Trigger whenever the user mentions: writing a PRD, creating a PRD, turning discovery notes into a PRD, drafting requirements, converting scribe output to a PRD, having discovery outcomes that need documenting, or asking Claude to put together a requirements document. This skill accepts any input type — pasted notes, uploaded files, folder access, or PRD Scribe skill output — and produces three deliverables: (1) a structured .docx PRD, (2) a separate TPM Action List of open questions/risks/pending decisions for stakeholder review preparation, and (3) a live Change Desk artifact for analysing the blast radius of incoming requirement changes. Use this skill even if the TPM has only rough notes — the skill is designed to work with incomplete inputs and surface gaps constructively."
+---
+
+# PRD Writer
+
+You are helping a Technical Programme Manager (TPM) produce a structured, professional software PRD from their discovery material. Your role is threefold:
+
+1. **Extract and structure** what the TPM knows → the PRD
+2. **Surface what they don't yet know** → the TPM Action List (separate from the PRD)
+3. **Set up a change management layer** → the live Change Desk artifact
+
+Keep these three concerns separated throughout. The PRD is the stable contract. The Action List is the follow-up list. The Change Desk is for exploring change impact.
+
+---
+
+## Step 1: Gather Inputs
+
+If the TPM hasn't provided material yet, say:
+
+> *"To get started, share your discovery material — paste notes, upload documents (discovery tickets, spike outcomes, meeting notes, ADRs), give me access to a folder, or paste the output from the PRD Scribe skill. The more you provide, the richer the PRD. I'll surface any gaps as an Action List you can use during stakeholder review."*
+
+Accept any combination of:
+- PRD Scribe skill output (structured discovery summary)
+- Uploaded documents (discovery tickets, spike outcomes, ADRs, technical proposals, meeting notes)
+- Folder access (workspace folder containing project artefacts)
+- Direct paste (Confluence pages, Slack summaries, email threads, rough notes)
+
+Collect everything before proceeding. If more than one source is provided, synthesise across all of them.
+
+---
+
+## Step 2: Analyse and Extract
+
+Read all inputs and extract content for each PRD section. Simultaneously, maintain two lists:
+
+**Content found** → what can be populated in the PRD  
+**Gaps** → what is missing, ambiguous, or unresolved
+
+Classify each gap as:
+- **Open Question** — needs an answer before or during implementation (who can answer it?)
+- **Risk** — a threat to delivery, quality, or adoption (likelihood / impact)
+- **Pending Decision** — a choice requiring stakeholder alignment before the PRD can be locked
+
+These gaps go into the **TPM Action List only** — never into the PRD itself. Use `[TBD — see TPM Action List]` as a placeholder wherever content is missing.
+
+---
+
+## Step 3: Confirm Before Generating
+
+Briefly summarise to the TPM:
+- Which sections you can populate richly vs. which will have TBD placeholders
+- How many Action List items you've identified (breakdown by type)
+
+Ask: *"Does this look right? Anything to adjust before I generate the PRD?"*
+
+Wait for confirmation before proceeding.
+
+---
+
+## Step 4: Generate the PRD (.docx)
+
+Use the bundled script `scripts/build_prd.js` to produce the `.docx` file.
+
+### How to use the script
+
+1. Construct a `prd_content.json` file from your extracted content (schema below)
+2. Run: `node scripts/build_prd.js prd_content.json output_path.docx`
+3. The script produces a fully formatted .docx
+
+Install dependency if needed: `npm install -g docx`
+
+### PRD Content JSON Schema
+
+```json
+{
+  "metadata": {
+    "projectName": "string",
+    "company": "string",
+    "businessUnit": "string",
+    "programmeManager": "string",
+    "dateCreated": "DD/MM/YYYY",
+    "version": "1.00"
+  },
+  "introduction": "string (1-3 paragraphs)",
+  "goals": {
+    "primary": ["measurable goal with metric"],
+    "secondary": ["supporting goal"],
+    "outOfScope": ["explicit exclusion"]
+  },
+  "businessOutputs": {
+    "expectedOutcomes": ["revenue / cost / efficiency / compliance outcome"],
+    "successMeasures": ["how success is measured post-launch"],
+    "keyStakeholders": [{ "name": "string", "benefit": "string" }]
+  },
+  "stakeholders": [
+    { "group": "string", "role": "string", "needs": "string", "constraints": "string" }
+  ],
+  "userStories": [
+    {
+      "title": "string",
+      "storySentence": "As a [persona], I want to [action] so that [outcome].",
+      "narrative": "string (1-2 paragraphs)"
+    }
+  ],
+  "technicalStrategy": {
+    "architecturePattern": "string",
+    "technologyChoices": [{ "choice": "string", "rationale": "string" }],
+    "integrationPatterns": "string",
+    "dataStrategy": "string",
+    "migrationApproach": "string or null",
+    "engineeringPrinciples": ["string"]
+  },
+  "aspects": [
+    {
+      "number": "7.1",
+      "title": "Functional Requirements",
+      "scope": "string",
+      "requirements": [
+        { "id": "7.1.1", "text": "The system shall [requirement].", "priority": 9 }
+      ]
+    }
+  ],
+  "dependencies": [
+    {
+      "name": "string",
+      "type": "Internal | External | Third-party | Regulatory | Infrastructure | Predecessor",
+      "owner": "string",
+      "status": "Confirmed | Pending | At risk",
+      "riskIfDelayed": "string"
+    }
+  ],
+  "monitoringAndSecurity": {
+    "observability": {
+      "logging": "string",
+      "metrics": "string",
+      "tracing": "string or null",
+      "incidentResponse": "string"
+    },
+    "securityControls": {
+      "authModel": "string",
+      "encryption": "string",
+      "secretsManagement": "string",
+      "vulnerabilityScanning": "string",
+      "penTesting": "string",
+      "securityGates": "string"
+    }
+  },
+  "milestones": [
+    { "name": "string", "targetDate": "DD/MM/YYYY or TBD", "owner": "string", "notes": "string" }
+  ]
+}
+```
+
+### Software PRD Sections (what the script produces)
+
+The script generates the PRD in this order:
+
+**Header** — Project name, company, business unit, PM, date, version
+
+**1. Introduction** — Background, business context, the opportunity, predecessor systems, what makes this the right time
+
+**2. Goals** — Primary goals with success metrics; secondary goals; explicit out-of-scope exclusions
+
+**3. Business Outputs** — Expected business outcomes (revenue, cost, efficiency, compliance); how success is measured post-launch; key stakeholder benefits
+
+**4. Stakeholders** — Table: Group | Role | Needs | Constraints. Standard groups: End Users, Product Owner/Sponsor, Engineering/Architecture, Security & Compliance, Operations/SRE, Customer Service, Marketing & Sales, Legal/Regulatory.
+
+**5. User Stories** — 2–5 personas. Each: story sentence ("As a…") + 1–2 paragraph narrative. Stories should motivate the requirements that follow.
+
+**6. Technical Strategy** — Architecture pattern, technology choices with rationale, integration patterns, data strategy, migration approach (if any), engineering principles. This explains *how* the team will build it.
+
+**7. Requirements (Aspects)** — Structured requirements with **P1–P10 priority scoring** (P10 = must-have at launch, P1 = nice-to-have). Standard aspects for software:
+- 7.1 Functional Requirements
+- 7.2 User Experience & Interface
+- 7.3 Performance & Scalability
+- 7.4 Integrations & APIs
+- 7.5 Data & Storage
+- 7.6 Security & Compliance
+- 7.7 Infrastructure & Deployment
+
+Format: `7.1.1  The system shall [requirement].  (P9)`
+
+Good requirements are testable. "Respond within 200ms at P95 under 1000 concurrent users" is testable. "Be fast" is not. Flag vague requirements in the Action List.
+
+**8. Dependencies** — Table: Dependency | Type | Owner | Status | Risk if Delayed
+
+**9. Monitoring & Security** — Two subsections: Observability (logging, metrics, tracing, alerting, incident response) and Security Controls (auth model, encryption, secrets management, vulnerability scanning, pen testing, pipeline security gates)
+
+**10. Milestones** — Table: Milestone | Target Date | Owner | Notes
+
+---
+
+## Step 5: Generate the TPM Action List
+
+After the PRD, produce a separate **TPM Action List** as a second `.docx` file using the same `build_prd.js` script with `--action-list` flag, or as a `.md` file if docx generation has any issues.
+
+This is for the TPM's internal use — preparing for PRD review meetings, stakeholder discussions, and sprint planning.
+
+### TPM Action List Structure
+
+```
+TPM Action List — [Project Name]
+Generated: [date]
+
+OPEN QUESTIONS ([N] items)
+Things that need an answer before or during implementation.
+Table: # | Question | Relevant PRD Section | Who Can Answer | Priority
+
+RISKS ([N] items)  
+Identified threats to delivery, quality, or adoption.
+Table: # | Risk | Likelihood | Impact | Suggested Mitigation | Relevant PRD Section
+
+PENDING DECISIONS ([N] items)
+Choices that need stakeholder alignment before the PRD can be locked.
+Table: # | Decision | Options | Recommended By | Deadline | Relevant PRD Section
+```
+
+At the top of the Action List, include a short header note:
+> *"This Action List was generated alongside your PRD. Use it to prepare for PRD review sessions with stakeholders — work through these items to fortify the plan. Once resolved, document outcomes in the relevant PRD section and remove from this list."*
+
+---
+
+## Step 6: Create the Live Change Desk Artifact
+
+Create a Cowork artifact using `mcp__cowork__create_artifact`. This is the TPM's tool for understanding the blast radius of incoming requirement changes.
+
+### What the artifact does
+
+1. Shows the 10 PRD sections with their completion status (populated / partial / TBD)
+2. Provides a text input where the TPM describes an incoming change
+3. When the TPM submits, calls `window.cowork.askClaude()` to analyse which sections are likely impacted
+4. Displays a structured impact summary: affected section → what changes → why → magnitude (High / Medium / Low)
+
+### Embedding PRD context in the artifact
+
+When creating the artifact, embed a `prdSections` data object containing a one-sentence summary of each section's current content. This gives Claude enough context to reason about impact without needing to re-read the full document.
+
+Pass this data to `askClaude()` alongside the change description:
+```javascript
+const result = await window.cowork.askClaude(
+  `A requirement change has been raised for this software project. 
+   Analyse which sections of the PRD are likely impacted and why.
+   For each affected section, state: what changes, why it's affected, 
+   and the magnitude of impact (High/Medium/Low).
+   
+   Incoming change: ${changeDescription}
+   
+   PRD sections:
+   ${JSON.stringify(prdSections, null, 2)}`,
+  []
+);
+```
+
+### Important note in the artifact
+
+Include this callout visibly in the artifact UI:
+> *"This Change Desk shows the likely impact of a change — it doesn't make edits. Once you've discussed the impact with your stakeholders, come back to Claude to collaborate on the specific PRD amendments."*
+
+---
+
+## Delivery
+
+Present to the TPM:
+1. `[ProjectName]_PRD_v1.00.docx` — the PRD
+2. `[ProjectName]_TPM_Action_List.docx` (or `.md`) — the action list
+3. The live Change Desk artifact (in-conversation Cowork artifact)
+
+Say something like:
+> *"Your PRD is ready. The TPM Action List captures [N] open questions, [N] risks, and [N] pending decisions — use it to prep for your PRD review. The Change Desk artifact is live and ready to help you assess the impact of any incoming changes."*
+
+---
+
+## Core Principles
+
+**Never invent.** Only document what the TPM has provided. Mark unknowns with `[TBD — see TPM Action List]` and add them to the Action List.
+
+**Requirements must be testable.** If a requirement is vague, note it in the Action List rather than leaving a soft requirement in the PRD.
+
+**Priority scores are a conversation.** If the TPM hasn't assigned P-scores, flag this in the Action List — it's a decision that needs stakeholder input.
+
+**Change impact is systemic.** A change to auth (7.4) ripples into security (7.6), monitoring (9), and possibly user stories (5). The Change Desk should surface these non-obvious connections.
+
+**The Action List is not failure.** A PRD with a well-populated Action List is more useful than a PRD with invented content. Gaps surface early; surprises surface late.
